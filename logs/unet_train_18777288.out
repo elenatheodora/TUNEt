@@ -1,0 +1,31 @@
+Thu Apr 28 19:54:43 2022       
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 470.57.02    Driver Version: 470.57.02    CUDA Version: 11.4     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Quadro RTX 8000     On   | 00000000:D8:00.0 Off |                    0 |
+| N/A   26C    P8    16W / 250W |      0MiB / 45556MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+                                                                               
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+usage: train.py [-h] [--dry_run] [--load_model LOAD_MODEL] [--cuda]
+                [--num_workers NUM_WORKERS] [--log_dir LOG_DIR]
+                [--data_dir DATA_DIR] [--checkpoint_dir CHECKPOINT_DIR]
+                [--lr LR] [--batch_size BATCH_SIZE] [--levels LEVELS]
+                [--depth DEPTH] [--sr SR] [--num_in_chan NUM_IN_CHAN]
+                [--num_out_chan NUM_OUT_CHAN] [--kernel_size KERNEL_SIZE]
+                [--output_size OUTPUT_SIZE] [--strides STRIDES]
+                [--patience PATIENCE] [--example_freq EXAMPLE_FREQ]
+                [--loss LOSS] [--conv_type CONV_TYPE] [--features FEATURES]
+                [--res RES] [--feature_growth FEATURE_GROWTH]
+train.py: error: unrecognized arguments: True
