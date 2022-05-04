@@ -10,6 +10,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 
+from torchmetrics.audio import SignalDistortionRatio #E
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
@@ -22,6 +23,55 @@ from utils.waveunet import Waveunet
 from utils.data_helper import Ambisonic
 import utils.model_helper as model_utils
 np.seterr(divide='ignore', invalid='ignore')
+
+def sdr(reference, estimation):
+    """
+    Scale-Invariant Signal-to-Distortion Ratio (SI-SDR)
+    Args:
+        reference: numpy.ndarray, [..., T]
+        estimation: numpy.ndarray, [..., T]
+    Returns:
+        SI-SDR
+    [1] SDR– Half- Baked or Well Done?
+    http://www.merl.com/publications/docs/TR2019-013.pdf
+    >>> np.random.seed(0)
+    >>> reference = np.random.randn(100)
+    >>> si_sdr(reference, reference)
+    inf
+    >>> si_sdr(reference, reference * 2)
+    inf
+    >>> si_sdr(reference, np.flip(reference))
+    -25.127672346460717
+    >>> si_sdr(reference, reference + np.flip(reference))
+    0.481070445785553
+    >>> si_sdr(reference, reference + 0.5)
+    6.3704606032577304
+    >>> si_sdr(reference, reference * 2 + 1)
+    6.3704606032577304
+    >>> si_sdr([1., 0], [0., 0])  # never predict only zeros
+    nan
+    >>> si_sdr([reference, reference], [reference * 2 + 1, reference * 1 + 0.5])
+    array([6.3704606, 6.3704606])
+    """
+    estimation, reference = np.broadcast_arrays(estimation, reference)
+
+    assert reference.dtype == np.float64, reference.dtype
+    assert estimation.dtype == np.float64, estimation.dtype
+
+    reference_energy = np.sum(reference ** 2, axis=-1, keepdims=True)
+
+    # This is $\alpha$ after Equation (3) in [1].
+    optimal_scaling = np.sum(reference * estimation, axis=-1, keepdims=True) \
+        / reference_energy
+
+    # This is $e_{\text{target}}$ in Equation (4) in [1].
+    projection = optimal_scaling * reference
+
+    # This is $e_{\text{res}}$ in Equation (4) in [1].
+    noise = estimation - projection
+
+    ratio = np.sum(projection ** 2, axis=-1) / np.sum(noise ** 2, axis=-1)
+    return 10 * np.log10(ratio)
 
 def main(args):
     num_channels = [args.features * i for i in range(1, args.levels + 1)] if args.feature_growth == "add" else \
@@ -107,6 +157,7 @@ def main(args):
         start_time = time.time()
         model.train()
         train_loss = 0.0
+        train_sdr_metric = 0.0 #E
         # st1
         for data, labels in tqdm(train_loader):
             # time-st1
@@ -122,20 +173,24 @@ def main(args):
             #st2
             outputs = model(data)
             loss = criterion(outputs, labels)
+            sdr_metric = np.mean(sdr(labels.detach().numpy().astype(np.float64),outputs.detach().numpy().astype(np.float64))) #E
             loss.backward()
             optimizer.step()
             #st2
 
             # print statistics
             train_loss += loss.item()
+            train_sdr_metric += sdr_metric #E
 
             writer.add_scalar("train_loss", loss.item()/args.batch_size, state["step"])
+            writer.add_scalar("train_sdr_metric", sdr_metric/args.batch_size, state["step"]) #E
             # time-st1
 
         train_losses.append(train_loss / len(train_loader))
 
         #validation loss
         valid_loss = 0.0
+        valid_sdr_metric = 0.0 #E
         model.eval()
 
         for data, labels in val_loader:
@@ -144,13 +199,18 @@ def main(args):
 
             target = model(data)
             loss = criterion(target, labels)
+            sdr_metric = np.mean(sdr(labels.detach().numpy().astype(np.float64),target.detach().numpy().astype(np.float64))) #E
             valid_loss += loss.item()
+            valid_sdr_metric += sdr_metric #E
 
         writer.add_scalar("val_loss", valid_loss / len(val_loader), state["step"])
+        writer.add_scalar("valid_sdr_metric", valid_sdr_metric / len(val_loader), state["step"]) #E
 
         val_losses.append(valid_loss / len(val_loader))
         print(f'Epoch {state["epochs"]}; Train Loss: {train_loss / len(train_loader)}; '
-                  f'Val Loss: {valid_loss / len(val_loader)}; time : {(time.time() - start_time)}sec')
+                f'SDR Metric Train: {train_sdr_metric / len(train_loader)}'
+                  f'Val Loss: {valid_loss / len(val_loader)};'
+                    f'SDR Metric Val: {valid_sdr_metric / len(val_loader)}; time : {(time.time() - start_time)}sec')
 
         avg_epoch_time += (time.time() - start_time)
 
