@@ -12,4 +12,4 @@
 
 singularity exec --nv /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif nvidia-smi
 
-singularity exec --nv --overlay ../Wave-U-Net-Pytorch/overlay-10GB-400K.ext3:ro /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif /bin/bash -c 'source /ext3/env.sh; python train.py --cuda --data_dir ../Wave-U-Net-Pytorch/hdf/ --num_in_chan 1 --num_out_chan 1 --patience 20'
+singularity exec --nv --overlay ../overlay-10GB-400K.ext3:ro /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif /bin/bash -c 'source /ext3/env.sh; python train.py --cuda --data_dir ../unet/hdf/ --num_in_chan 1 --num_out_chan 1 --patience 20'
