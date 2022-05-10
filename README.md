@@ -2,10 +2,9 @@
 ADAPTING THE WAVE-U-NET ARCHITECTURE FOR VOCAL ENGINEERING
 
 Elena Georgieva, Iran Roman, and Brian McFee
-
 Affiliation: Music and Audio Research Lab (MARL), New York University, USA
 
-email: elena(nyu.edu)
+email: elena[at]nyu.edu
 
 NYU Data Science 1008, a Final Project
 
